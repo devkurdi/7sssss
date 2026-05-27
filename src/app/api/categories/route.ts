@@ -1,8 +1,24 @@
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Default categories - auto-seeded if none exist
+const DEFAULT_CATEGORIES = [
+  { nameBadini: 'ئایینی', nameSorani: 'ئایینی' },
+  { nameBadini: 'زانستی', nameSorani: 'زانستی' },
+  { nameBadini: 'مێژوویی', nameSorani: 'مێژوویی' },
+  { nameBadini: 'جوگرافی', nameSorani: 'جوگرافی' },
+  { nameBadini: 'وەرزشی', nameSorani: 'وەرزشی' },
+  { nameBadini: 'گشتی', nameSorani: 'گشتی' },
+]
+
 export async function GET() {
   try {
+    // Auto-seed: if no categories exist, create the default ones
+    const count = await db.category.count()
+    if (count === 0) {
+      await db.category.createMany({ data: DEFAULT_CATEGORIES })
+    }
+
     const categories = await db.category.findMany({
       include: { _count: { select: { questions: true } } },
       orderBy: { createdAt: 'desc' },
