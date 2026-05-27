@@ -776,6 +776,8 @@ function QuestionsSection() {
   const { playerName, setTab, setSelectedCategory, resetQuiz } = useAppStore()
   const { toast } = useToast()
 
+  const catColors = ['from-blue-500 to-cyan-400', 'from-purple-500 to-pink-400', 'from-red-500 to-orange-400', 'from-green-500 to-emerald-400', 'from-amber-500 to-yellow-400', 'from-indigo-500 to-blue-400', 'from-rose-500 to-red-400', 'from-teal-500 to-cyan-400']
+
   const getCatName = (cat: DBCategory) => lang === 'badini' ? cat.nameBadini : cat.nameSorani
   const getQText = (q: DBQuestion) => lang === 'badini' ? q.textBadini : q.textSorani
   const getOption = (q: DBQuestion, idx: number) => {
@@ -798,106 +800,136 @@ function QuestionsSection() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="max-w-5xl mx-auto px-4 pt-4 pb-8 space-y-4"
+      className="max-w-5xl mx-auto px-4 pt-4 pb-8 space-y-5"
     >
       {/* Header */}
-      <div className="flex items-center justify-between" dir="rtl">
-        <div className="flex items-center gap-2">
-          <ListChecks className="w-5 h-5 text-blue-400" />
-          <h2 className="text-white font-bold text-lg">{t(lang, 'questionsTab')}</h2>
-        </div>
-        <span className="text-white/40 text-xs">{questions.length} {t(lang, 'questions')}</span>
+      <div className="text-center" dir="rtl">
+        <motion.div
+          initial={{ scale: 0, rotate: -180 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
+          className="mx-auto mb-3 w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-2xl shadow-blue-500/30"
+        >
+          <ListChecks className="w-7 h-7 text-white" />
+        </motion.div>
+        <h2 className="text-xl font-black text-white">{t(lang, 'questionsTab')}</h2>
+        <p className="text-white/30 text-xs mt-1">{questions.length} {t(lang, 'questions')}</p>
       </div>
 
-      {/* Category Filter */}
-      <div className="flex gap-2 overflow-x-auto pb-2" dir="rtl">
-        <button
+      {/* Category Filter - Beautiful Chips */}
+      <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none" dir="rtl">
+        <motion.button
+          whileTap={{ scale: 0.95 }}
           onClick={() => { setSelectedCat(''); refetch() }}
-          className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+          className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all duration-300 ${
             !selectedCat
-              ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-              : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10'
+              ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-purple-500/25'
+              : 'bg-white/[0.04] border border-white/10 text-white/50 hover:bg-white/[0.08] hover:text-white/70'
           }`}
         >
+          <BookOpen className="w-3.5 h-3.5" />
           {t(lang, 'allCategories')}
-        </button>
-        {categories.map((cat) => (
-          <button
+        </motion.button>
+        {categories.map((cat, ci) => (
+          <motion.button
             key={cat.id}
+            whileTap={{ scale: 0.95 }}
             onClick={() => { setSelectedCat(cat.id); refetch() }}
-            className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all duration-300 ${
               selectedCat === cat.id
-                ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10'
+                ? `bg-gradient-to-r ${catColors[ci % catColors.length]} text-white shadow-lg`
+                : 'bg-white/[0.04] border border-white/10 text-white/50 hover:bg-white/[0.08] hover:text-white/70'
             }`}
           >
-            {getCatName(cat)} ({cat._count?.questions || 0})
-          </button>
+            <CircleDot className="w-3 h-3" />
+            {getCatName(cat)}
+            <span className="opacity-60">({cat._count?.questions || 0})</span>
+          </motion.button>
         ))}
-        {selectedCat && (
+      </div>
+
+      {/* Start Quiz Button for Selected Category */}
+      {selectedCat && (
+        <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}>
           <Button
             onClick={() => handleStartFromCategory(selectedCat)}
-            className="flex-shrink-0 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-bold rounded-xl px-4 py-2 text-xs"
+            className="w-full bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 hover:from-green-700 hover:via-emerald-700 hover:to-teal-700 text-white font-bold rounded-2xl py-5 text-sm shadow-lg shadow-green-500/20"
           >
-            <Play className="w-3.5 h-3.5 mr-1.5" />
+            <Play className="w-4 h-4 mr-2" />
             {t(lang, 'startQuiz')}
           </Button>
-        )}
-      </div>
+        </motion.div>
+      )}
 
       {/* Questions List */}
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="w-10 h-10 border-3 border-blue-400 border-t-transparent rounded-full animate-spin mb-3" />
+          <p className="text-white/30 text-xs">{t(lang, 'availableQuestions')}</p>
         </div>
       ) : questions.length === 0 ? (
-        <div className="text-center py-12">
-          <BookOpen className="w-12 h-12 text-white/15 mx-auto mb-2" />
-          <p className="text-white/30 text-sm" dir="rtl">{t(lang, 'noQuestions')}</p>
-        </div>
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+          <Card className="bg-white/[0.03] backdrop-blur-xl border-white/[0.06] overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-blue-500/50 via-purple-500/50 to-pink-500/50" />
+            <CardContent className="p-10 text-center">
+              <div className="mx-auto mb-4 w-20 h-20 rounded-full bg-white/[0.04] flex items-center justify-center">
+                <BookOpen className="w-10 h-10 text-white/15" />
+              </div>
+              <p className="text-white/40 text-sm font-medium" dir="rtl">{t(lang, 'noQuestions')}</p>
+              <p className="text-white/20 text-xs mt-1" dir="rtl">له ئەدمین پانێل پرسیار زیادبکە</p>
+            </CardContent>
+          </Card>
+        </motion.div>
       ) : (
-        <ScrollArea className="max-h-[calc(100vh-220px)]">
-          <div className="space-y-2">
+        <ScrollArea className="max-h-[calc(100vh-280px)]">
+          <div className="space-y-3">
             {questions.map((q, idx) => {
               const catName = lang === 'badini' ? q.category.nameBadini : q.category.nameSorani
+              const catIdx = categories.findIndex(c => c.id === q.category.id)
+              const optLabels = ['A', 'B', 'C', 'D']
               return (
                 <motion.div
                   key={q.id}
-                  initial={{ opacity: 0, y: 5 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.02 }}
+                  transition={{ delay: idx * 0.04 }}
                 >
-                  <Card className="bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.06] transition-all overflow-hidden">
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3" dir="rtl">
-                        <span className="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500/15 border border-blue-500/15 flex items-center justify-center text-xs font-bold text-blue-300">
-                          {idx + 1}
-                        </span>
-                        <div className="flex-1 min-w-0 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-purple-500/10 text-purple-300/70 border-purple-500/15 text-[9px] px-1.5 py-0">
-                              {catName}
-                            </Badge>
-                            <span className="text-yellow-400/50 text-[9px] flex items-center gap-0.5">
-                              <Star className="w-2.5 h-2.5 fill-yellow-400/50" /> ١٠ {t(lang, 'points')}
-                            </span>
+                  <Card className="bg-white/[0.03] backdrop-blur-xl border-white/[0.06] hover:bg-white/[0.05] transition-all duration-300 overflow-hidden group">
+                    <div className={`h-0.5 bg-gradient-to-r ${catColors[catIdx % catColors.length]}`} />
+                    <CardContent className="p-5">
+                      <div className="space-y-4" dir="rtl">
+                        {/* Question Header */}
+                        <div className="flex items-start gap-3">
+                          <div className={`flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br ${catColors[catIdx % catColors.length]} flex items-center justify-center shadow-lg`}>
+                            <span className="text-white text-xs font-black">{idx + 1}</span>
                           </div>
-                          <p className="text-white/90 text-sm leading-relaxed">{getQText(q)}</p>
-                          <div className="grid grid-cols-2 gap-1.5">
-                            {[1, 2, 3, 4].map((optIdx) => (
-                              <div
-                                key={optIdx}
-                                className={`px-3 py-1.5 rounded-lg text-xs ${
-                                  optIdx === q.correctAnswer
-                                    ? 'bg-green-500/10 border border-green-500/20 text-green-300'
-                                    : 'bg-white/[0.03] border border-white/5 text-white/50'
-                                }`}
-                              >
-                                <span className="text-white/30 ml-1">{optIdx}.</span>
-                                {getOption(q, optIdx)}
-                              </div>
-                            ))}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge className={`bg-gradient-to-r ${catColors[catIdx % catColors.length]} text-white/90 border-0 text-[9px] px-2 py-0.5 font-bold`}>
+                                {catName}
+                              </Badge>
+                              <span className="text-yellow-400/40 text-[9px] flex items-center gap-0.5">
+                                <Star className="w-2.5 h-2.5 fill-yellow-400/40" /> ١٠ {t(lang, 'points')}
+                              </span>
+                            </div>
+                            <p className="text-white/90 text-sm leading-relaxed font-medium">{getQText(q)}</p>
                           </div>
+                        </div>
+
+                        {/* Options - All same style, no correct answer revealed */}
+                        <div className="grid grid-cols-2 gap-2">
+                          {[1, 2, 3, 4].map((optIdx) => (
+                            <motion.div
+                              key={optIdx}
+                              whileHover={{ scale: 1.02 }}
+                              className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.06] transition-all duration-200"
+                            >
+                              <span className={`flex-shrink-0 w-6 h-6 rounded-lg bg-gradient-to-br ${catColors[catIdx % catColors.length]} flex items-center justify-center text-[10px] font-black text-white opacity-70`}>
+                                {optLabels[optIdx - 1]}
+                              </span>
+                              <span className="text-white/60 text-xs leading-snug truncate">{getOption(q, optIdx)}</span>
+                            </motion.div>
+                          ))}
                         </div>
                       </div>
                     </CardContent>
