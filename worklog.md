@@ -31,3 +31,23 @@ Stage Summary:
 - Timer set to 60 seconds
 - All code compiles and builds successfully
 - Download: /home/z/my-project/download/7s-psyar-kurd-vercel.tar.gz
+---
+Task ID: 1
+Agent: Main Agent
+Task: Fix Vercel deployment issues - categories not showing, admin panel can't add categories
+
+Work Log:
+- Read and analyzed all project files (schema, API routes, page.tsx, store, etc.)
+- Fixed DATABASE_URL in .env from "file:./dev.db" to absolute path "file:/home/z/my-project/db/custom.db"
+- Updated seed route to include GET endpoint for checking seed status
+- Seed route already works: creates 6 default categories when count is 0
+- Tested all CRUD APIs: seed, categories (GET/POST/DELETE), questions (GET/POST/DELETE) - all working
+- Cleaned up test data from database, keeping only 6 default categories
+- Started dev server on port 3000 - confirmed working
+
+Stage Summary:
+- Fixed: DATABASE_URL pointing to wrong file
+- Confirmed: Auto-seed mechanism works (creates 6 categories when none exist)
+- Confirmed: Admin panel category and question creation works via API
+- Server running on port 3000 with 6 categories ready
+- Categories: ئایینی, زانستی, مێژوویی, جوگرافی, وەرزشی, گشتی
