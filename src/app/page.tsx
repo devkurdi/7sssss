@@ -11,7 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   UserPlus, Shield, Plus, Trash2, Trophy, CheckCircle2,
   XCircle, BookOpen, Languages,
-  Star, Zap, Sparkles, Eye, EyeOff,
+  Star, Zap, Sparkles,
   Gamepad2, Crown, Target, CircleDot, Medal,
   Users, ChevronDown, ChevronUp, Play, RotateCcw, ArrowLeft, ListChecks, BarChart3,
 } from 'lucide-react'
@@ -414,7 +414,6 @@ function NavBar() {
 function AdminLoginModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { lang, setIsAdminAuth, setTab } = useAppStore()
   const [adminPass, setAdminPass] = useState('')
-  const [showPass, setShowPass] = useState(false)
   const { toast } = useToast()
 
   const handleAdminLogin = async () => {
@@ -466,22 +465,15 @@ function AdminLoginModal({ open, onClose }: { open: boolean; onClose: () => void
                 </div>
                 <div className="relative">
                   <Input
-                    type={showPass ? 'text' : 'password'}
+                    type="password"
                     value={adminPass}
                     onChange={(e) => setAdminPass(e.target.value)}
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:border-orange-400/50 rounded-xl h-12 text-sm pr-3 pl-10"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/20 focus:border-orange-400/50 rounded-xl h-12 text-sm pr-3 pl-3"
                     placeholder={t(lang, 'enterAdminPass')}
                     dir="ltr"
                     onKeyDown={(e) => e.key === 'Enter' && handleAdminLogin()}
                     autoFocus
                   />
-                  <button
-                    onClick={() => setShowPass(!showPass)}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
-                    type="button"
-                  >
-                    {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={onClose} variant="outline" className="flex-1 bg-white/5 border-white/10 text-white/70 hover:bg-white/10 rounded-xl">
@@ -1130,6 +1122,7 @@ function QuizSection() {
   const { toast } = useToast()
   const [autoNextTimer, setAutoNextTimer] = useState<NodeJS.Timeout | null>(null)
   const [quizLoaded, setQuizLoaded] = useState(false)
+  const [showCorrectAnswer, setShowCorrectAnswer] = useState(false)
 
   // Load quiz questions from DB
   useEffect(() => {
@@ -1211,8 +1204,13 @@ function QuizSection() {
 
   if (!quizLoaded) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-10 h-10 border-3 border-blue-400 border-t-transparent rounded-full animate-spin" />
+      <div className="flex flex-col items-center justify-center py-20">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full"
+        />
+        <p className="text-white/30 text-xs mt-4">{t(lang, 'availableQuestions')}</p>
       </div>
     )
   }
@@ -1220,15 +1218,23 @@ function QuizSection() {
   if (!currentQ) {
     return (
       <div className="max-w-lg mx-auto px-4 py-12 text-center">
-        <Card className="bg-white/[0.04] backdrop-blur-xl border-white/10">
-          <CardContent className="p-8">
-            <BookOpen className="w-12 h-12 text-white/20 mx-auto mb-3" />
-            <p className="text-white/50 text-sm" dir="rtl">{t(lang, 'noQuestions')}</p>
-            <Button onClick={() => setTab('home')} className="mt-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl">
-              {t(lang, 'backToHome')}
-            </Button>
-          </CardContent>
-        </Card>
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+        >
+          <Card className="bg-white/[0.04] backdrop-blur-xl border-white/10 overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
+            <CardContent className="p-8">
+              <div className="mx-auto mb-4 w-20 h-20 rounded-full bg-white/[0.04] flex items-center justify-center">
+                <BookOpen className="w-10 h-10 text-white/15" />
+              </div>
+              <p className="text-white/50 text-sm" dir="rtl">{t(lang, 'noQuestions')}</p>
+              <Button onClick={() => setTab('home')} className="mt-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl">
+                {t(lang, 'backToHome')}
+              </Button>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     )
   }
@@ -1252,6 +1258,7 @@ function QuizSection() {
       addScore(10)
     } else {
       incrementWrong()
+      setShowCorrectAnswer(true)
     }
 
     // Save answer to DB
@@ -1272,10 +1279,10 @@ function QuizSection() {
       }
     }
 
-    // Auto next after 2 seconds
+    // Auto next after 2.5 seconds
     const timer = setTimeout(() => {
       handleNext()
-    }, 2000)
+    }, 2500)
     setAutoNextTimer(timer)
   }
 
@@ -1311,160 +1318,276 @@ function QuizSection() {
       setCurrentQuestionIndex(currentQuestionIndex + 1)
       setSelectedAnswer(null)
       setIsAnswered(false)
+      setShowCorrectAnswer(false)
       setTimeLeft(60)
     }
   }
 
+  const optLabels = ['A', 'B', 'C', 'D']
+  const optColors = [
+    'from-blue-500 to-cyan-400',
+    'from-purple-500 to-pink-400',
+    'from-amber-500 to-orange-400',
+    'from-emerald-500 to-green-400',
+  ]
+
   const getOptionStyle = (optIndex: number) => {
     if (!isAnswered) {
-      return 'border-white/10 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/20 cursor-pointer'
+      return 'border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] hover:border-white/20 hover:shadow-lg hover:shadow-white/5 cursor-pointer'
     }
     if (optIndex === currentQ.correctAnswer) {
-      return 'border-green-500/50 bg-green-500/10 shadow-lg shadow-green-500/10'
+      return 'border-green-400/60 bg-green-500/15 shadow-xl shadow-green-500/20 ring-1 ring-green-400/20'
     }
     if (optIndex === selectedAnswer && optIndex !== currentQ.correctAnswer) {
-      return 'border-red-500/50 bg-red-500/10 shadow-lg shadow-red-500/10'
+      return 'border-red-400/60 bg-red-500/15 shadow-xl shadow-red-500/20 ring-1 ring-red-400/20'
     }
-    return 'border-white/5 bg-white/[0.01] opacity-50'
+    return 'border-white/[0.04] bg-white/[0.01] opacity-40'
+  }
+
+  const getOptLabelBg = (optIndex: number) => {
+    if (isAnswered && optIndex === currentQ.correctAnswer) {
+      return 'bg-green-500/30 text-green-200 shadow-inner shadow-green-400/20'
+    }
+    if (isAnswered && optIndex === selectedAnswer && optIndex !== currentQ.correctAnswer) {
+      return 'bg-red-500/30 text-red-200 shadow-inner shadow-red-400/20'
+    }
+    return `bg-gradient-to-br ${optColors[(optIndex - 1) % optColors.length]} text-white shadow-lg`
   }
 
   const getOptionIcon = (optIndex: number) => {
     if (!isAnswered) return null
-    if (optIndex === currentQ.correctAnswer) return <CheckCircle2 className="w-5 h-5 text-green-400" />
-    if (optIndex === selectedAnswer && optIndex !== currentQ.correctAnswer) return <XCircle className="w-5 h-5 text-red-400" />
+    if (optIndex === currentQ.correctAnswer) return <CheckCircle2 className="w-5 h-5 text-green-400 drop-shadow-[0_0_6px_rgba(74,222,128,0.5)]" />
+    if (optIndex === selectedAnswer && optIndex !== currentQ.correctAnswer) return <XCircle className="w-5 h-5 text-red-400 drop-shadow-[0_0_6px_rgba(248,113,113,0.5)]" />
     return null
   }
 
   const catName = lang === 'badini' ? currentQ.category.nameBadini : currentQ.category.nameSorani
+  const progressPct = ((currentQuestionIndex + 1) / quizQuestions.length) * 100
+  const isCorrectAnswer = isAnswered && selectedAnswer === currentQ.correctAnswer
+  const isWrongAnswer = isAnswered && selectedAnswer !== currentQ.correctAnswer
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="max-w-2xl mx-auto px-4 pt-4 pb-8"
+      className="max-w-2xl mx-auto px-4 pt-3 pb-8 space-y-4"
     >
-      {/* Top bar */}
-      <div className="flex items-center justify-between mb-4">
+      {/* Top bar - Player info */}
+      <div className="flex items-center justify-between">
         <button
           onClick={() => setTab('home')}
-          className="flex items-center gap-1.5 text-white/50 hover:text-white/80 text-xs transition-colors"
+          className="flex items-center gap-1.5 text-white/40 hover:text-white/80 text-xs transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-3.5 h-3.5" />
           {t(lang, 'backToHome')}
         </button>
-        <div className="flex items-center gap-2">
-          <Badge className="bg-purple-500/10 text-purple-300/70 border-purple-500/15 text-[10px]">
-            {catName}
-          </Badge>
-          <Badge className="bg-yellow-500/10 text-yellow-300/70 border-yellow-500/15 text-[10px] flex items-center gap-1">
-            <Star className="w-2.5 h-2.5 fill-yellow-400" />
-            {score}
-          </Badge>
+        <div className="flex items-center gap-2" dir="rtl">
+          {/* Player avatar + name */}
+          <div className="flex items-center gap-2 bg-white/[0.04] rounded-full pr-1 pl-3 py-1 border border-white/[0.06]">
+            <span className="text-white/70 text-[11px] font-bold">{playerName}</span>
+            <div className="w-6 h-6 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
+              {playerAvatar ? (
+                <img src={playerAvatar} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-white text-[9px] font-bold">{playerName.charAt(0)}</span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      <Card className="bg-white/[0.04] backdrop-blur-xl border-white/10 shadow-2xl overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-red-500" />
-        <CardContent className="p-6 space-y-5">
-          {/* Timer + Progress */}
-          <div className="flex items-center justify-between">
-            <CircularTimer timeLeft={timeLeft} maxTime={60} />
-            <div className="text-center" dir="rtl">
-              <span className="text-white/40 text-xs">{t(lang, 'question')}</span>
-              <div className="text-white font-bold text-lg">
-                {currentQuestionIndex + 1} {t(lang, 'of')} {quizQuestions.length}
+      {/* Category + Score + Timer Row */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Badge className="bg-gradient-to-r from-purple-600/30 to-blue-600/30 text-purple-200 border-purple-400/20 text-[10px] px-3 py-1 font-bold backdrop-blur-sm">
+            <CircleDot className="w-2.5 h-2.5 mr-1" />
+            {catName}
+          </Badge>
+          <Badge className="bg-gradient-to-r from-yellow-600/30 to-amber-600/30 text-yellow-200 border-yellow-400/20 text-[10px] px-3 py-1 font-bold backdrop-blur-sm flex items-center gap-1">
+            <Star className="w-2.5 h-2.5 fill-yellow-400" />
+            {score} {t(lang, 'points')}
+          </Badge>
+        </div>
+        <CircularTimer timeLeft={timeLeft} maxTime={60} />
+      </div>
+
+      {/* Progress bar */}
+      <div className="relative">
+        <div className="w-full bg-white/[0.06] rounded-full h-2 overflow-hidden">
+          <motion.div
+            className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 h-2 rounded-full relative"
+            initial={{ width: 0 }}
+            animate={{ width: `${progressPct}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+          </motion.div>
+        </div>
+        <div className="flex justify-between mt-1">
+          <span className="text-white/20 text-[9px]">{t(lang, 'question')} {currentQuestionIndex + 1}</span>
+          <span className="text-white/20 text-[9px]">{currentQuestionIndex + 1} / {quizQuestions.length}</span>
+        </div>
+      </div>
+
+      {/* Main Question Card */}
+      <motion.div
+        key={currentQuestionIndex}
+        initial={{ opacity: 0, x: 30, scale: 0.97 }}
+        animate={{ opacity: 1, x: 0, scale: 1 }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+      >
+        <Card className={`relative overflow-hidden backdrop-blur-xl shadow-2xl transition-all duration-500 ${
+          isCorrectAnswer
+            ? 'bg-green-950/40 border-green-500/30 shadow-green-500/10'
+            : isWrongAnswer
+            ? 'bg-red-950/40 border-red-500/30 shadow-red-500/10'
+            : 'bg-white/[0.04] border-white/[0.08]'
+        }`}>
+          {/* Animated top gradient bar */}
+          <div className={`h-1.5 transition-all duration-500 ${
+            isCorrectAnswer
+              ? 'bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400'
+              : isWrongAnswer
+              ? 'bg-gradient-to-r from-red-400 via-rose-400 to-pink-400'
+              : 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500'
+          }`} />
+
+          {/* Decorative corner glows */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-[60px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/5 rounded-full blur-[60px] pointer-events-none" />
+
+          <CardContent className="p-6 space-y-5 relative">
+            {/* Question Number Badge */}
+            <div className="flex items-center justify-center">
+              <div className="flex items-center gap-2 bg-white/[0.04] rounded-full px-4 py-1.5 border border-white/[0.06]">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                  <span className="text-white text-[10px] font-black">{currentQuestionIndex + 1}</span>
+                </div>
+                <span className="text-white/40 text-[10px] font-bold">{t(lang, 'questionNumber')} {currentQuestionIndex + 1} {t(lang, 'of')} {quizQuestions.length}</span>
               </div>
             </div>
-          </div>
 
-          {/* Progress bar */}
-          <div className="w-full bg-white/5 rounded-full h-1.5">
-            <motion.div
-              className="bg-gradient-to-r from-blue-500 to-purple-500 h-1.5 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${((currentQuestionIndex + 1) / quizQuestions.length) * 100}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-
-          {/* Question */}
-          <div className="text-center" dir="rtl">
-            <motion.p
-              key={currentQuestionIndex}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-white text-lg font-bold leading-relaxed"
-            >
-              {lang === 'badini' ? currentQ.textBadini : currentQ.textSorani}
-            </motion.p>
-          </div>
-
-          {/* Options */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {[1, 2, 3, 4].map((optIdx) => (
-              <motion.button
-                key={optIdx}
-                whileHover={!isAnswered ? { scale: 1.02 } : {}}
-                whileTap={!isAnswered ? { scale: 0.98 } : {}}
-                onClick={() => handleAnswer(optIdx)}
-                disabled={isAnswered}
-                className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-300 ${getOptionStyle(optIdx)}`}
-                dir="rtl"
+            {/* Question Text */}
+            <div className="text-center" dir="rtl">
+              <motion.p
+                key={`q-${currentQuestionIndex}`}
+                initial={{ opacity: 0, y: 15, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+                className="text-white text-xl font-bold leading-relaxed px-2"
               >
-                <span className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 ${
-                  isAnswered && optIdx === currentQ.correctAnswer ? 'bg-green-500/20 text-green-300' :
-                  isAnswered && optIdx === selectedAnswer && optIdx !== currentQ.correctAnswer ? 'bg-red-500/20 text-red-300' :
-                  'bg-white/5 text-white/50'
-                }`}>
-                  {optIdx}
-                </span>
-                <span className="text-white/90 text-sm flex-1 text-right">{getOptionText(currentQ, optIdx)}</span>
-                {getOptionIcon(optIdx)}
-              </motion.button>
-            ))}
-          </div>
+                {lang === 'badini' ? currentQ.textBadini : currentQ.textSorani}
+              </motion.p>
+            </div>
 
-          {/* Feedback */}
-          <AnimatePresence>
+            {/* Options */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[1, 2, 3, 4].map((optIdx) => (
+                <motion.button
+                  key={optIdx}
+                  whileHover={!isAnswered ? { scale: 1.03, y: -2 } : {}}
+                  whileTap={!isAnswered ? { scale: 0.97 } : {}}
+                  onClick={() => handleAnswer(optIdx)}
+                  disabled={isAnswered}
+                  className={`relative flex items-center gap-3 p-4 rounded-2xl border-2 transition-all duration-400 ${getOptionStyle(optIdx)}`}
+                  dir="rtl"
+                >
+                  {/* Option letter badge */}
+                  <span className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0 transition-all duration-300 ${getOptLabelBg(optIdx)}`}>
+                    {optLabels[optIdx - 1]}
+                  </span>
+                  <span className="text-white/90 text-sm font-medium flex-1 text-right leading-relaxed">{getOptionText(currentQ, optIdx)}</span>
+                  <AnimatePresence>
+                    {getOptionIcon(optIdx) && (
+                      <motion.div
+                        initial={{ scale: 0, rotate: -90 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+                      >
+                        {getOptionIcon(optIdx)}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.button>
+              ))}
+            </div>
+
+            {/* Feedback */}
+            <AnimatePresence>
+              {isAnswered && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                  className={`text-center p-4 rounded-2xl backdrop-blur-sm ${
+                    selectedAnswer === currentQ.correctAnswer
+                      ? 'bg-green-500/10 border border-green-400/20 shadow-lg shadow-green-500/5'
+                      : 'bg-red-500/10 border border-red-400/20 shadow-lg shadow-red-500/5'
+                  }`}
+                  dir="rtl"
+                >
+                  {selectedAnswer === currentQ.correctAnswer ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <motion.div
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        <CheckCircle2 className="w-6 h-6 text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
+                      </motion.div>
+                      <span className="text-green-300 font-bold text-sm">{t(lang, 'correct')}</span>
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 0.3, delay: 0.2 }}
+                      >
+                        <span className="bg-green-500/20 text-green-300 text-[10px] font-bold px-2 py-0.5 rounded-full">+10 {t(lang, 'points')}</span>
+                      </motion.div>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-center gap-2">
+                        <XCircle className="w-6 h-6 text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.6)]" />
+                        <span className="text-red-300 font-bold text-sm">{t(lang, 'wrong')}</span>
+                      </div>
+                      {showCorrectAnswer && (
+                        <motion.p
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.3 }}
+                          className="text-white/40 text-xs"
+                        >
+                          {t(lang, 'wrongCorrectIs')}: <span className="text-green-300/80 font-bold">{getOptionText(currentQ, currentQ.correctAnswer)}</span>
+                        </motion.p>
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Next button */}
             {isAnswered && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className={`text-center p-3 rounded-xl ${
-                  selectedAnswer === currentQ.correctAnswer
-                    ? 'bg-green-500/10 border border-green-500/20'
-                    : 'bg-red-500/10 border border-red-500/20'
-                }`}
-                dir="rtl"
+                transition={{ delay: 0.3 }}
               >
-                {selectedAnswer === currentQ.correctAnswer ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-400" />
-                    <span className="text-green-300 font-bold text-sm">{t(lang, 'correct')}</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2">
-                    <XCircle className="w-5 h-5 text-red-400" />
-                    <span className="text-red-300 font-bold text-sm">{t(lang, 'wrong')}</span>
-                  </div>
-                )}
+                <Button
+                  onClick={handleNext}
+                  className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 text-white font-bold rounded-2xl py-5 shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 transition-all hover:scale-[1.01]"
+                >
+                  {currentQuestionIndex + 1 >= quizQuestions.length ? (
+                    <><Trophy className="w-4 h-4 mr-2" />{t(lang, 'viewResults')}</>
+                  ) : (
+                    <><ArrowLeft className="w-4 h-4 mr-2 rotate-180" />{t(lang, 'nextQuestion')}</>
+                  )}
+                </Button>
               </motion.div>
             )}
-          </AnimatePresence>
-
-          {/* Next button (manual) */}
-          {isAnswered && (
-            <Button
-              onClick={handleNext}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold rounded-xl py-4"
-            >
-              {currentQuestionIndex + 1 >= quizQuestions.length ? t(lang, 'viewResults') : t(lang, 'nextQuestion')}
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
     </motion.div>
   )
 }
