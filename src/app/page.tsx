@@ -11,7 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   UserPlus, Shield, Plus, Trash2, Trophy, CheckCircle2,
   XCircle, BookOpen, Languages,
-  Star, Zap, Sparkles,
+  Star, Zap, Sparkles, Lightbulb,
   Gamepad2, Crown, Target, CircleDot, Medal,
   Users, ChevronDown, ChevronUp, Play, RotateCcw, ArrowLeft, ListChecks, BarChart3,
 } from 'lucide-react'
@@ -1123,6 +1123,7 @@ function QuizSection() {
   const [autoNextTimer, setAutoNextTimer] = useState<NodeJS.Timeout | null>(null)
   const [quizLoaded, setQuizLoaded] = useState(false)
   const [showCorrectAnswer, setShowCorrectAnswer] = useState(false)
+  const [pulseCorrect, setPulseCorrect] = useState(false)
 
   // Load quiz questions from DB
   useEffect(() => {
@@ -1256,6 +1257,8 @@ function QuizSection() {
     if (isCorrect) {
       incrementCorrect()
       addScore(10)
+      setPulseCorrect(true)
+      setTimeout(() => setPulseCorrect(false), 500)
     } else {
       incrementWrong()
       setShowCorrectAnswer(true)
@@ -1324,40 +1327,43 @@ function QuizSection() {
   }
 
   const optLabels = ['A', 'B', 'C', 'D']
+  const optEmoji = ['🅰️', '🅱️', '🅲', '🅳']
   const optColors = [
-    'from-blue-500 to-cyan-400',
-    'from-purple-500 to-pink-400',
-    'from-amber-500 to-orange-400',
-    'from-emerald-500 to-green-400',
+    { bg: 'from-blue-600 to-blue-400', light: 'bg-blue-500/15 border-blue-400/40 text-blue-300', ring: 'ring-blue-400/30' },
+    { bg: 'from-purple-600 to-purple-400', light: 'bg-purple-500/15 border-purple-400/40 text-purple-300', ring: 'ring-purple-400/30' },
+    { bg: 'from-amber-600 to-amber-400', light: 'bg-amber-500/15 border-amber-400/40 text-amber-300', ring: 'ring-amber-400/30' },
+    { bg: 'from-emerald-600 to-emerald-400', light: 'bg-emerald-500/15 border-emerald-400/40 text-emerald-300', ring: 'ring-emerald-400/30' },
   ]
 
   const getOptionStyle = (optIndex: number) => {
     if (!isAnswered) {
-      return 'border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] hover:border-white/20 hover:shadow-lg hover:shadow-white/5 cursor-pointer'
+      const c = optColors[(optIndex - 1) % optColors.length]
+      return `border-white/[0.06] bg-white/[0.02] hover:${c.light} hover:shadow-lg cursor-pointer`
     }
     if (optIndex === currentQ.correctAnswer) {
-      return 'border-green-400/60 bg-green-500/15 shadow-xl shadow-green-500/20 ring-1 ring-green-400/20'
+      return 'border-green-400/70 bg-green-500/20 shadow-2xl shadow-green-500/25 ring-2 ring-green-400/30'
     }
     if (optIndex === selectedAnswer && optIndex !== currentQ.correctAnswer) {
-      return 'border-red-400/60 bg-red-500/15 shadow-xl shadow-red-500/20 ring-1 ring-red-400/20'
+      return 'border-red-400/70 bg-red-500/20 shadow-2xl shadow-red-500/25 ring-2 ring-red-400/30'
     }
-    return 'border-white/[0.04] bg-white/[0.01] opacity-40'
+    return 'border-white/[0.03] bg-white/[0.01] opacity-30 scale-95'
   }
 
   const getOptLabelBg = (optIndex: number) => {
     if (isAnswered && optIndex === currentQ.correctAnswer) {
-      return 'bg-green-500/30 text-green-200 shadow-inner shadow-green-400/20'
+      return 'bg-green-500/40 text-green-100 shadow-lg shadow-green-500/30'
     }
     if (isAnswered && optIndex === selectedAnswer && optIndex !== currentQ.correctAnswer) {
-      return 'bg-red-500/30 text-red-200 shadow-inner shadow-red-400/20'
+      return 'bg-red-500/40 text-red-100 shadow-lg shadow-red-500/30'
     }
-    return `bg-gradient-to-br ${optColors[(optIndex - 1) % optColors.length]} text-white shadow-lg`
+    const c = optColors[(optIndex - 1) % optColors.length]
+    return `bg-gradient-to-br ${c.bg} text-white shadow-lg`
   }
 
   const getOptionIcon = (optIndex: number) => {
     if (!isAnswered) return null
-    if (optIndex === currentQ.correctAnswer) return <CheckCircle2 className="w-5 h-5 text-green-400 drop-shadow-[0_0_6px_rgba(74,222,128,0.5)]" />
-    if (optIndex === selectedAnswer && optIndex !== currentQ.correctAnswer) return <XCircle className="w-5 h-5 text-red-400 drop-shadow-[0_0_6px_rgba(248,113,113,0.5)]" />
+    if (optIndex === currentQ.correctAnswer) return <CheckCircle2 className="w-5 h-5 text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.7)]" />
+    if (optIndex === selectedAnswer && optIndex !== currentQ.correctAnswer) return <XCircle className="w-5 h-5 text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.7)]" />
     return null
   }
 
@@ -1366,86 +1372,107 @@ function QuizSection() {
   const isCorrectAnswer = isAnswered && selectedAnswer === currentQ.correctAnswer
   const isWrongAnswer = isAnswered && selectedAnswer !== currentQ.correctAnswer
 
+  // Total dots for progress
+  const totalDots = Math.min(quizQuestions.length, 20)
+  const dotStep = quizQuestions.length <= totalDots ? 1 : Math.ceil(quizQuestions.length / totalDots)
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="max-w-2xl mx-auto px-4 pt-3 pb-8 space-y-4"
+      className="max-w-2xl mx-auto px-4 pt-3 pb-8"
     >
-      {/* Top bar - Player info */}
-      <div className="flex items-center justify-between">
+      {/* ===== TOP HEADER BAR ===== */}
+      <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => setTab('home')}
-          className="flex items-center gap-1.5 text-white/40 hover:text-white/80 text-xs transition-colors"
+          className="flex items-center gap-1.5 text-white/40 hover:text-white/80 text-[11px] transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          {t(lang, 'backToHome')}
         </button>
-        <div className="flex items-center gap-2" dir="rtl">
-          {/* Player avatar + name */}
-          <div className="flex items-center gap-2 bg-white/[0.04] rounded-full pr-1 pl-3 py-1 border border-white/[0.06]">
-            <span className="text-white/70 text-[11px] font-bold">{playerName}</span>
-            <div className="w-6 h-6 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0">
-              {playerAvatar ? (
-                <img src={playerAvatar} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-white text-[9px] font-bold">{playerName.charAt(0)}</span>
-              )}
-            </div>
+
+        {/* Center - Category icon */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 bg-white/[0.05] rounded-full px-3 py-1.5 border border-white/[0.08]">
+            <CircleDot className="w-3 h-3 text-purple-400" />
+            <span className="text-white/60 text-[10px] font-bold">{catName}</span>
+          </div>
+        </div>
+
+        {/* Right - Player info */}
+        <div className="flex items-center gap-1.5" dir="rtl">
+          <span className="text-white/50 text-[10px] font-bold">{playerName}</span>
+          <div className="w-6 h-6 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center flex-shrink-0 ring-2 ring-white/10">
+            {playerAvatar ? (
+              <img src={playerAvatar} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-white text-[8px] font-bold">{playerName.charAt(0)}</span>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Category + Score + Timer Row */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Badge className="bg-gradient-to-r from-purple-600/30 to-blue-600/30 text-purple-200 border-purple-400/20 text-[10px] px-3 py-1 font-bold backdrop-blur-sm">
-            <CircleDot className="w-2.5 h-2.5 mr-1" />
-            {catName}
-          </Badge>
-          <Badge className="bg-gradient-to-r from-yellow-600/30 to-amber-600/30 text-yellow-200 border-yellow-400/20 text-[10px] px-3 py-1 font-bold backdrop-blur-sm flex items-center gap-1">
-            <Star className="w-2.5 h-2.5 fill-yellow-400" />
-            {score} {t(lang, 'points')}
-          </Badge>
-        </div>
+      {/* ===== TIMER + SCORE ROW ===== */}
+      <div className="flex items-center justify-center gap-6 mb-4">
+        {/* Score */}
+        <motion.div
+          className="flex items-center gap-1.5 bg-yellow-500/10 rounded-full px-4 py-2 border border-yellow-500/20"
+          animate={pulseCorrect ? { scale: [1, 1.1, 1] } : {}}
+          transition={{ duration: 0.3 }}
+        >
+          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+          <span className="text-yellow-200 text-sm font-black">{score}</span>
+        </motion.div>
+
+        {/* Timer */}
         <CircularTimer timeLeft={timeLeft} maxTime={60} />
-      </div>
 
-      {/* Progress bar */}
-      <div className="relative">
-        <div className="w-full bg-white/[0.06] rounded-full h-2 overflow-hidden">
-          <motion.div
-            className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 h-2 rounded-full relative"
-            initial={{ width: 0 }}
-            animate={{ width: `${progressPct}%` }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-          </motion.div>
-        </div>
-        <div className="flex justify-between mt-1">
-          <span className="text-white/20 text-[9px]">{t(lang, 'question')} {currentQuestionIndex + 1}</span>
-          <span className="text-white/20 text-[9px]">{currentQuestionIndex + 1} / {quizQuestions.length}</span>
+        {/* Question count */}
+        <div className="flex items-center gap-1.5 bg-blue-500/10 rounded-full px-4 py-2 border border-blue-500/20">
+          <Target className="w-4 h-4 text-blue-400" />
+          <span className="text-blue-200 text-sm font-black">{currentQuestionIndex + 1}/{quizQuestions.length}</span>
         </div>
       </div>
 
-      {/* Main Question Card */}
+      {/* ===== PROGRESS DOTS ===== */}
+      <div className="flex items-center justify-center gap-1.5 mb-5">
+        {Array.from({ length: Math.min(quizQuestions.length, 15) }).map((_, i) => {
+          const qIdx = i * (quizQuestions.length <= 15 ? 1 : Math.ceil(quizQuestions.length / 15))
+          const isCurrent = qIdx === currentQuestionIndex || (i === currentQuestionIndex && quizQuestions.length <= 15)
+          const isPast = i < currentQuestionIndex
+          return (
+            <motion.div
+              key={i}
+              className={`rounded-full transition-all duration-300 ${
+                isCurrent
+                  ? 'w-6 h-2 bg-gradient-to-r from-blue-400 to-purple-400 shadow-lg shadow-purple-500/30'
+                  : isPast
+                  ? 'w-2 h-2 bg-blue-400/60'
+                  : 'w-2 h-2 bg-white/15'
+              }`}
+              layout
+            />
+          )
+        })}
+      </div>
+
+      {/* ===== MAIN QUESTION CARD ===== */}
       <motion.div
         key={currentQuestionIndex}
-        initial={{ opacity: 0, x: 30, scale: 0.97 }}
+        initial={{ opacity: 0, x: 40, scale: 0.95 }}
         animate={{ opacity: 1, x: 0, scale: 1 }}
-        transition={{ duration: 0.4, ease: 'easeOut' }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       >
-        <Card className={`relative overflow-hidden backdrop-blur-xl shadow-2xl transition-all duration-500 ${
+        <Card className={`relative overflow-hidden backdrop-blur-xl transition-all duration-700 ${
           isCorrectAnswer
-            ? 'bg-green-950/40 border-green-500/30 shadow-green-500/10'
+            ? 'bg-green-950/30 border-green-500/30 shadow-2xl shadow-green-500/15'
             : isWrongAnswer
-            ? 'bg-red-950/40 border-red-500/30 shadow-red-500/10'
-            : 'bg-white/[0.04] border-white/[0.08]'
+            ? 'bg-red-950/30 border-red-500/30 shadow-2xl shadow-red-500/15'
+            : 'bg-white/[0.03] border-white/[0.06] shadow-2xl shadow-black/20'
         }`}>
-          {/* Animated top gradient bar */}
-          <div className={`h-1.5 transition-all duration-500 ${
+          {/* Top gradient accent */}
+          <div className={`h-2 transition-all duration-700 ${
             isCorrectAnswer
               ? 'bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400'
               : isWrongAnswer
@@ -1453,18 +1480,19 @@ function QuizSection() {
               : 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500'
           }`} />
 
-          {/* Decorative corner glows */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-[60px] pointer-events-none" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/5 rounded-full blur-[60px] pointer-events-none" />
+          {/* Glow decorations */}
+          <div className="absolute top-0 right-0 w-40 h-40 bg-purple-500/[0.04] rounded-full blur-[80px] pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-40 h-40 bg-blue-500/[0.04] rounded-full blur-[80px] pointer-events-none" />
 
-          <CardContent className="p-6 space-y-5 relative">
-            {/* Question Number Badge */}
-            <div className="flex items-center justify-center">
-              <div className="flex items-center gap-2 bg-white/[0.04] rounded-full px-4 py-1.5 border border-white/[0.06]">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
-                  <span className="text-white text-[10px] font-black">{currentQuestionIndex + 1}</span>
-                </div>
-                <span className="text-white/40 text-[10px] font-bold">{t(lang, 'questionNumber')} {currentQuestionIndex + 1} {t(lang, 'of')} {quizQuestions.length}</span>
+          <CardContent className="p-5 sm:p-7 space-y-5 relative">
+            {/* Question Number + Icon */}
+            <div className="flex items-center justify-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-xl shadow-purple-500/25">
+                <Lightbulb className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-center">
+                <span className="text-white/30 text-[10px] block">{t(lang, 'questionNumber')}</span>
+                <span className="text-white font-black text-lg">{currentQuestionIndex + 1} <span className="text-white/30 text-sm font-medium">{t(lang, 'of')} {quizQuestions.length}</span></span>
               </div>
             </div>
 
@@ -1472,92 +1500,110 @@ function QuizSection() {
             <div className="text-center" dir="rtl">
               <motion.p
                 key={`q-${currentQuestionIndex}`}
-                initial={{ opacity: 0, y: 15, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: 0.4, delay: 0.1 }}
-                className="text-white text-xl font-bold leading-relaxed px-2"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.15 }}
+                className="text-white text-lg sm:text-xl font-bold leading-loose px-2"
               >
                 {lang === 'badini' ? currentQ.textBadini : currentQ.textSorani}
               </motion.p>
             </div>
 
-            {/* Options */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {[1, 2, 3, 4].map((optIdx) => (
-                <motion.button
-                  key={optIdx}
-                  whileHover={!isAnswered ? { scale: 1.03, y: -2 } : {}}
-                  whileTap={!isAnswered ? { scale: 0.97 } : {}}
-                  onClick={() => handleAnswer(optIdx)}
-                  disabled={isAnswered}
-                  className={`relative flex items-center gap-3 p-4 rounded-2xl border-2 transition-all duration-400 ${getOptionStyle(optIdx)}`}
-                  dir="rtl"
-                >
-                  {/* Option letter badge */}
-                  <span className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0 transition-all duration-300 ${getOptLabelBg(optIdx)}`}>
-                    {optLabels[optIdx - 1]}
-                  </span>
-                  <span className="text-white/90 text-sm font-medium flex-1 text-right leading-relaxed">{getOptionText(currentQ, optIdx)}</span>
-                  <AnimatePresence>
-                    {getOptionIcon(optIdx) && (
-                      <motion.div
-                        initial={{ scale: 0, rotate: -90 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 15 }}
-                      >
-                        {getOptionIcon(optIdx)}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.button>
-              ))}
+            {/* Divider */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+              <span className="text-white/15 text-[9px] font-bold">{t(lang, 'option')}</span>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            </div>
+
+            {/* Options - Beautiful Cards */}
+            <div className="space-y-2.5">
+              {[1, 2, 3, 4].map((optIdx) => {
+                const c = optColors[(optIdx - 1) % optColors.length]
+                return (
+                  <motion.button
+                    key={optIdx}
+                    whileHover={!isAnswered ? { scale: 1.02, x: -4 } : {}}
+                    whileTap={!isAnswered ? { scale: 0.97 } : {}}
+                    onClick={() => handleAnswer(optIdx)}
+                    disabled={isAnswered}
+                    className={`w-full flex items-center gap-3 p-3.5 rounded-2xl border-2 transition-all duration-500 ${getOptionStyle(optIdx)}`}
+                    dir="rtl"
+                  >
+                    {/* Option letter badge */}
+                    <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0 transition-all duration-500 ${getOptLabelBg(optIdx)}`}>
+                      {optLabels[optIdx - 1]}
+                    </span>
+                    <span className="text-white/90 text-sm font-semibold flex-1 text-right leading-relaxed">{getOptionText(currentQ, optIdx)}</span>
+                    <AnimatePresence>
+                      {getOptionIcon(optIdx) && (
+                        <motion.div
+                          initial={{ scale: 0, rotate: -180 }}
+                          animate={{ scale: 1, rotate: 0 }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 12 }}
+                          className="flex-shrink-0"
+                        >
+                          {getOptionIcon(optIdx)}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.button>
+                )
+              })}
             </div>
 
             {/* Feedback */}
             <AnimatePresence>
               {isAnswered && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  initial={{ opacity: 0, y: 15, scale: 0.9 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                  className={`text-center p-4 rounded-2xl backdrop-blur-sm ${
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 18 }}
+                  className={`text-center p-4 rounded-2xl ${
                     selectedAnswer === currentQ.correctAnswer
-                      ? 'bg-green-500/10 border border-green-400/20 shadow-lg shadow-green-500/5'
-                      : 'bg-red-500/10 border border-red-400/20 shadow-lg shadow-red-500/5'
+                      ? 'bg-green-500/10 border border-green-400/25 shadow-xl shadow-green-500/10'
+                      : 'bg-red-500/10 border border-red-400/25 shadow-xl shadow-red-500/10'
                   }`}
                   dir="rtl"
                 >
                   {selectedAnswer === currentQ.correctAnswer ? (
-                    <div className="flex items-center justify-center gap-2">
+                    <div className="flex items-center justify-center gap-3">
                       <motion.div
-                        animate={{ rotate: [0, 10, -10, 0] }}
-                        transition={{ duration: 0.5 }}
+                        animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.2, 1] }}
+                        transition={{ duration: 0.6 }}
                       >
-                        <CheckCircle2 className="w-6 h-6 text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
+                        <CheckCircle2 className="w-7 h-7 text-green-400 drop-shadow-[0_0_10px_rgba(74,222,128,0.7)]" />
                       </motion.div>
-                      <span className="text-green-300 font-bold text-sm">{t(lang, 'correct')}</span>
-                      <motion.div
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 0.3, delay: 0.2 }}
+                      <span className="text-green-300 font-black text-base">{t(lang, 'correct')}</span>
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.2, type: 'spring' }}
+                        className="bg-green-500/25 text-green-200 text-xs font-bold px-3 py-1 rounded-full shadow-lg shadow-green-500/20"
                       >
-                        <span className="bg-green-500/20 text-green-300 text-[10px] font-bold px-2 py-0.5 rounded-full">+10 {t(lang, 'points')}</span>
-                      </motion.div>
+                        +10 {t(lang, 'points')}
+                      </motion.span>
                     </div>
                   ) : (
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-center gap-2">
-                        <XCircle className="w-6 h-6 text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.6)]" />
-                        <span className="text-red-300 font-bold text-sm">{t(lang, 'wrong')}</span>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-center gap-3">
+                        <motion.div
+                          animate={{ scale: [1, 1.15, 1] }}
+                          transition={{ duration: 0.4 }}
+                        >
+                          <XCircle className="w-7 h-7 text-red-400 drop-shadow-[0_0_10px_rgba(248,113,113,0.7)]" />
+                        </motion.div>
+                        <span className="text-red-300 font-black text-base">{t(lang, 'wrong')}</span>
                       </div>
                       {showCorrectAnswer && (
                         <motion.p
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: 0.3 }}
-                          className="text-white/40 text-xs"
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.4 }}
+                          className="text-white/50 text-xs"
                         >
-                          {t(lang, 'wrongCorrectIs')}: <span className="text-green-300/80 font-bold">{getOptionText(currentQ, currentQ.correctAnswer)}</span>
+                          {t(lang, 'wrongCorrectIs')}: <span className="text-green-300/90 font-bold">{getOptionText(currentQ, currentQ.correctAnswer)}</span>
                         </motion.p>
                       )}
                     </div>
@@ -1569,18 +1615,18 @@ function QuizSection() {
             {/* Next button */}
             {isAnswered && (
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+                transition={{ delay: 0.4 }}
               >
                 <Button
                   onClick={handleNext}
-                  className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 text-white font-bold rounded-2xl py-5 shadow-lg shadow-purple-500/20 hover:shadow-xl hover:shadow-purple-500/30 transition-all hover:scale-[1.01]"
+                  className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-500 hover:via-purple-500 hover:to-pink-500 text-white font-black rounded-2xl py-6 text-base shadow-xl shadow-purple-500/25 hover:shadow-2xl hover:shadow-purple-500/35 transition-all hover:scale-[1.02] active:scale-[0.98]"
                 >
                   {currentQuestionIndex + 1 >= quizQuestions.length ? (
-                    <><Trophy className="w-4 h-4 mr-2" />{t(lang, 'viewResults')}</>
+                    <><Trophy className="w-5 h-5 mr-2" />{t(lang, 'viewResults')}</>
                   ) : (
-                    <><ArrowLeft className="w-4 h-4 mr-2 rotate-180" />{t(lang, 'nextQuestion')}</>
+                    <><Sparkles className="w-5 h-5 mr-2" />{t(lang, 'nextQuestion')}</>
                   )}
                 </Button>
               </motion.div>
